@@ -24,3 +24,4 @@ print(f"Average prediction confidence: {average_confidence * 100:.2f}%")
 print("Boxes:")
 for box in result[0].boxes:
     print(box)
+    print (box)
