@@ -2,9 +2,25 @@ from ultralytics import YOLO
 
 import cv2 
 import pickle
+import pandas as pd
+
 class BallTracker:
     def __init__(self,model_path):
         self.model = YOLO(model_path)
+
+    def interpolate_ball_positions(self, ball_detections):
+        ball_positions = [x.get(1,[]) for x in ball_detections]
+
+        #convert to dataframe
+        df_ball_positions = pd.DataFrame(ball_positions, columns = ['x1', 'y1', 'x2', 'y2'])
+
+        #interpolate missing values
+        df_ball_positions = df_ball_positions.interpolate()
+        df_ball_positions = df_ball_positions.bfill()
+
+        ball_positions = [{1:x} for x in df_ball_positions.to_numpy().tolist()]
+
+        return ball_positions
 
 
     def detect_frames(self,frames, read_from_stub=False, stub_path=None):
@@ -27,7 +43,7 @@ class BallTracker:
         return ball_detections
 
     def detect_frame(self,frame):
-        results = self.model.predict(frame,conf = 0.15, persist=True)[0]
+        results = self.model.predict(frame,conf = 0.15)[0]
 
         ball_dict = {}
         for box in results.boxes:
@@ -42,8 +58,8 @@ class BallTracker:
             # Draw Bounding Boxes
             for track_id, bbox in ball_dict.items():
                 x1, y1, x2, y2 = bbox
-                cv2.putText(frame, f"Ball ID: {track_id}",(int(bbox[0]),int(bbox[1] -10 )),cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+                cv2.putText(frame, f"Ball ID: {track_id}",(int(bbox[0]),int(bbox[1] -10 )),cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 225, 255), 2)
+                cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 255), 2)
             output_video_frames.append(frame)
         
         return output_video_frames
