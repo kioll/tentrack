@@ -1,26 +1,23 @@
 from ultralytics import YOLO 
-
-import cv2 
+import cv2
 import pickle
 import sys
 sys.path.append('../')
 from utils import measure_distance, get_center_of_bbox
 
-
-
 class PlayerTracker:
     def __init__(self,model_path):
         self.model = YOLO(model_path)
 
-    def choose_and_filter_players(self,court_keypoints, player_detections):
-        players_detections_first_frame = player_detections[0]
-        chosen_player = self.choose_players(court_keypoints, players_detections_first_frame)
+    def choose_and_filter_players(self, court_keypoints, player_detections):
+        player_detections_first_frame = player_detections[0]
+        chosen_player = self.choose_players(court_keypoints, player_detections_first_frame)
         filtered_player_detections = []
         for player_dict in player_detections:
-            filtered_player_dict = {k: v for k, v in player_dict.items() if k in chosen_player}
+            filtered_player_dict = {track_id: bbox for track_id, bbox in player_dict.items() if track_id in chosen_player}
             filtered_player_detections.append(filtered_player_dict)
         return filtered_player_detections
-    
+
     def choose_players(self, court_keypoints, player_dict):
         distances = []
         for track_id, bbox in player_dict.items():
@@ -41,10 +38,8 @@ class PlayerTracker:
         return chosen_players
 
 
-
     def detect_frames(self,frames, read_from_stub=False, stub_path=None):
         player_detections = []
-
 
         if read_from_stub and stub_path is not None:
             with open(stub_path, 'rb') as f:
@@ -55,7 +50,7 @@ class PlayerTracker:
             player_dict = self.detect_frame(frame)
             player_detections.append(player_dict)
         
-        if stub_path:
+        if stub_path is not None:
             with open(stub_path, 'wb') as f:
                 pickle.dump(player_detections, f)
         
